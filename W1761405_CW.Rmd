@@ -12,13 +12,25 @@ install.packages("ggstatsplot")
 install.packages("readxl")
 install.packages("factoextra")
 install.packages("NbClust")
+install.packages('swamp')
 ```
+
+```{r}
+if (!require("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+BiocManager::install("impute")
+```
+
+
 ```{r}
 # Load the package
 library(ggstatsplot)
 library(readxl)
 library(factoextra)
 library(NbClust)
+library(tidyverse)
+library(swamp)
 ```
 
 ### Question 01
@@ -351,6 +363,111 @@ precision4
 According the the recall values, k = 2 clustering option gives us the most probability to retrieve the relevant items. So, winner should be **k = 2**
 
 ```{r}
+#compute PCA
+winedata_PCA  <- prcomp(nill_outliers_winedataset, scale = TRUE)
+summary(winedata_PCA)
+```
+```{r}
+fviz_eig(winedata_PCA)
+```
+```{r}
+fviz_pca_ind(winedata_PCA,
+             col.ind = "cos2", # Color by the quality of representation
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+             repel = TRUE     # Avoid text overlapping
+             )
+```
+```{r}
+fviz_pca_var(winedata_PCA,
+             col.var = "contrib", # Color by contributions to the PC
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+             repel = TRUE     # Avoid text overlapping
+             )
+```
+```{r}
+head(winedata_PCA[5])
+```
+```{r}
+new_pca_dataset = winedata_PCA[[5]]
+new_pca <- list()
+for(i in 1:12){
+  new_pca[[i]]<- new_pca_dataset[[i]]
+}
+
+new_pca_dataset = new_pca_dataset[ -c(1:9) ]
+summary(new_pca_dataset)
+```
+
+```{r}
+#standard deviation of PCA
+std_dev_pca <- winedata_PCA$sdev
+std_dev_pca
+```
+
+```{r}
+#compute variance
+pca_var <- std_dev_pca^2
+```
+
+```{r}
+pca_var[1:12]
+```
+
+```{r}
+#proportion of variance explained
+prop_varex_pca <- pca_var/sum(pca_var)
+```
+
+```{r}
+prop_varex_pca[1:12]
+```
+```{r}
+#cumulative scree plot
+plot(cumsum(prop_varex_pca), xlab = "Principal Component",
+              ylab = "Cumulative Proportion of Variance Explained",
+              type = "b")
+```
+
+Above plot shows that 9 components results in variance close to ~ 96%. Therefore, in this case, we’ll select number of components as 9 [PC1 to PC9] and proceed as **new transformed dataset**.
+
+```{r}
+#add a input set with principal components
+input_set.data <- data.frame(winedata_PCA$x)
+```
+
+```{r}
+input_set.data <- input_set.data[,1:9]
+```
+
+```{r}
+# kmean for k = 2 pca
+pca_clustering_result3 <- kmeans(input_set.data, 3)
+pca_clustering_result3
+```
+
+## Objective 02
+
+```{r}
 
 ```
+
+
+
+ 
+
+
+
+
+```{r}
+kill.pc(winedata_PCA, pc=c(1,9), imputeknn = F, center = T)
+```
+
+
+
+
+
+
+
+
+
 
