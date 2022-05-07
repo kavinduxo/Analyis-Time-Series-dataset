@@ -1,0 +1,356 @@
+---
+title: "DM & ML Course Work Notebook"
+output: html_notebook
+---
+
+
+## Objective 01
+
+```{r}
+# install the packages
+install.packages("ggstatsplot")
+install.packages("readxl")
+install.packages("factoextra")
+install.packages("NbClust")
+```
+```{r}
+# Load the package
+library(ggstatsplot)
+library(readxl)
+library(factoextra)
+library(NbClust)
+```
+
+### Question 01
+```{r}
+# import Excel file into R
+wineDataset <- read_excel("S:\\UoW\\YR3\\ML\\cw\\Whitewine_v2.xlsx")
+```
+```{r}
+# get column name
+names(wineDataset) <- gsub(" ", "_", names(wineDataset))
+colnames(wineDataset)
+```
+```{r}
+#demo dataset
+wineDataset
+```
+```{r}
+# Create a boxplot of the dataset, outliers are shown as two distinct points
+boxplot(wineDataset)$out
+```
+```{r}
+# find outliers and store them
+outliers1 <- boxplot(wineDataset$fixed_acidity, plot = FALSE)$out
+outliers2 <- boxplot(wineDataset$volatile_acidity, plot = FALSE)$out
+outliers3 <- boxplot(wineDataset$citric_acid, plot = FALSE)$out
+outliers4 <- boxplot(wineDataset$residual_sugar, plot = FALSE)$out
+outliers5 <- boxplot(wineDataset$chlorides, plot = FALSE)$out
+outliers6 <- boxplot(wineDataset$free_sulfur_dioxide, plot = FALSE)$out
+outliers7 <- boxplot(wineDataset$total_sulfur_dioxide, plot = FALSE)$out
+outliers8 <- boxplot(wineDataset$density, plot = FALSE)$out
+outliers9 <- boxplot(wineDataset$pH, plot = FALSE)$out
+outliers10 <- boxplot(wineDataset$sulphates, plot = FALSE)$out
+outliers11 <- boxplot(wineDataset$alcohol, plot = FALSE)$out
+```
+```{r}
+# restore dataset for new varibale
+nill_outliers_winedataset <- wineDataset
+
+```
+```{r}
+while (length(outliers4) > 0 || length(outliers6) > 0 || length(outliers7) > 0 || length(outliers9) > 0) {
+
+    # remove outliers from new duplicated dataset
+    if (length(outliers1) > 0) {
+        nill_outliers_winedataset <- nill_outliers_winedataset[-which(nill_outliers_winedataset$fixed_acidity %in% outliers1), ]
+    }
+    if (length(outliers2) > 0) {
+        nill_outliers_winedataset <- nill_outliers_winedataset[-which(nill_outliers_winedataset$volatile_acidity %in% outliers2), ]
+    }
+    if (length(outliers3) > 0) {
+        nill_outliers_winedataset <- nill_outliers_winedataset[-which(nill_outliers_winedataset$citric_acid %in% outliers3), ]
+    }
+    if (length(outliers4) > 0) {
+        nill_outliers_winedataset <- nill_outliers_winedataset[-which(nill_outliers_winedataset$residual_sugar %in% outliers4), ]
+    }
+    if (length(outliers5) > 0) {
+        nill_outliers_winedataset <- nill_outliers_winedataset[-which(nill_outliers_winedataset$chlorides %in% outliers5), ]
+    }
+    if (length(outliers6) > 0) {
+        nill_outliers_winedataset <- nill_outliers_winedataset[-which(nill_outliers_winedataset$free_sulfur_dioxide %in% outliers6), ]
+    }
+    if (length(outliers7) > 0) {
+        nill_outliers_winedataset <- nill_outliers_winedataset[-which(nill_outliers_winedataset$total_sulfur_dioxide %in% outliers7), ]
+    }
+    # if (length(outliers8) > 0) {
+    #     nill_outliers_winedataset <- nill_outliers_winedataset[-which(nill_outliers_winedataset$density %in% outliers8), ]
+    # }
+    if (length(outliers9) > 0) {
+        nill_outliers_winedataset <- nill_outliers_winedataset[-which(nill_outliers_winedataset$pH %in% outliers9), ]
+    }
+    if (length(outliers10) > 0) {
+        nill_outliers_winedataset <- nill_outliers_winedataset[-which(nill_outliers_winedataset$sulphates %in% outliers10), ]
+    }
+    # if (length(outliers11) > 0) {
+    #     nill_outliers_winedataset <- nill_outliers_winedataset[-which(nill_outliers_winedataset$alcohol %in% outliers11), ]
+    # }
+
+    outliers1 <- boxplot(nill_outliers_winedataset$fixed_acidity, plot = FALSE)$out
+    outliers2 <- boxplot(nill_outliers_winedataset$volatile_acidity, plot = FALSE)$out
+    outliers3 <- boxplot(nill_outliers_winedataset$citric_acid, plot = FALSE)$out
+    outliers4 <- boxplot(nill_outliers_winedataset$residual_sugar, plot = FALSE)$out
+    outliers5 <- boxplot(nill_outliers_winedataset$chlorides, plot = FALSE)$out
+    outliers6 <- boxplot(nill_outliers_winedataset$free_sulfur_dioxide, plot = FALSE)$out
+    outliers7 <- boxplot(nill_outliers_winedataset$total_sulfur_dioxide, plot = FALSE)$out
+    outliers8 <- boxplot(nill_outliers_winedataset$density, plot = FALSE)$out
+    outliers9 <- boxplot(nill_outliers_winedataset$pH, plot = FALSE)$out
+    outliers10 <- boxplot(nill_outliers_winedataset$sulphates, plot = FALSE)$out
+    outliers11 <- boxplot(nill_outliers_winedataset$alcohol, plot = FALSE)$out
+}
+```
+```{r}
+# Visualize all classes
+boxplot(nill_outliers_winedataset)$out
+```
+```{r}
+#seperate input variables and output variable
+output_column = nill_outliers_winedataset$quality  
+new_input_winedataset = nill_outliers_winedataset[,!(names(nill_outliers_winedataset) %in% c("quality"))]
+```
+
+```{r}
+# Visualize indivizual classes
+oldpar1 = par(mfrow = c(2,6))
+for ( i in 1:11 ) {
+  boxplot(new_input_winedataset[[i]])
+  mtext(names(new_input_winedataset)[i], cex = 1, side = 1, line = 2)
+}
+par(oldpar1) 
+```
+### Question 02
+```{r}
+#standarize new dataset with the help of scale func in R
+scale_inputs <- scale(new_input_winedataset)
+scale_inputs
+```
+```{r}
+#standarize outputs with the help of scale func in R
+scale_outputs <- scale(output_column)
+scale_outputs
+```
+
+```{r}
+# NbClust giving best number of clusters
+set.seed(26)
+clusterNo=NbClust(scale_inputs,distance="euclidean", min.nc=2,max.nc=10,method="kmeans",index="all")
+```
+```{r}
+# Elbow method
+fviz_nbclust(scale_inputs, kmeans, method = "wss") + geom_vline(xintercept = 4, linetype = 2)+ 
+  labs(subtitle = "Elbow method")
+```
+
+```{r}
+# Silhouette method
+fviz_nbclust(scale_inputs, kmeans, method = "silhouette")+
+  labs(subtitle = "Silhouette method")
+```
+```{r}
+# Gap statistic
+# nboot = 50 to keep the function speedy. 
+# recommended value: nboot= 500 for your analysis.
+# Use verbose = FALSE to hide computing progression.
+set.seed(123)
+fviz_nbclust(scale_inputs, kmeans, nstart = 25,  method = "gap_stat", nboot = 50)+
+  labs(subtitle = "Gap statistic method")
+```
+
+```{r}
+# kmean for k = 2
+clustering_result2 <- kmeans(scale_inputs, 2)
+fviz_cluster(clustering_result2, data = scale_inputs, geom="point", ellipse.type="convex", ggthme=theme_bw())
+```
+```{r}
+# kmean for k = 3
+clustering_result3 <- kmeans(scale_inputs, 3)
+fviz_cluster(clustering_result3, data = scale_inputs, geom="point", ellipse.type="convex", ggthme=theme_bw())
+```
+
+```{r}
+# kmean for k = 4
+clustering_result4 <- kmeans(scale_inputs, 4)
+fviz_cluster(clustering_result4, data = scale_inputs, geom="point", ellipse.type="convex", ggthme=theme_bw())
+```
+
+```{r}
+k = 2:10
+#set.seed(42)	
+WSS = sapply(k, function(k) {kmeans(new_df, centers=k)$tot.withinss})
+plot(k, WSS, type="l", xlab= "Number of k", ylab="Within sum of squares")
+```
+
+
+```{r}
+#get more information(wss) about clusters for k=2
+clustering_result2
+```
+```{r}
+clustering_result2$betweenss/clustering_result2$totss
+```
+
+```{r}
+#get more information(wss) about clusters for k=3
+clustering_result3
+```
+```{r}
+clustering_result3$betweenss/clustering_result3$totss
+```
+
+```{r}
+#get more information(wss) about clusters for k=4
+clustering_result4
+```
+```{r}
+clustering_result4$betweenss/clustering_result4$totss
+```
+
+```{r}
+#CM for k=2
+table(output_column,clustering_result2$cluster)  
+```
+```{r}
+#CM for k=3
+table(output_column,clustering_result3$cluster) 
+```
+```{r}
+#CM for k=4
+table(output_column,clustering_result4$cluster) 
+```
+```{r}
+subsample <- list()
+for(i in 1:2){
+  subsample[[i]]<- nill_outliers_winedataset[clustering_result2$cluster==i,]
+}
+```
+```{r}
+table(subsample[[1]]$quality)
+```
+```{r}
+table(subsample[[2]]$quality)
+```
+```{r}
+#Accuracy considering cluster 1
+TP2_1 = 610
+FN2_1 = 415
+FP2_1 = 724 + 145 + 21
+TN2_1 = 1079 + 626 + 113
+accuracy2_1 = (TP2_1 + TN2_1)/ (TP2_1 + FP2_1 + FN2_1 + TN2_1)
+accuracy2_1
+```
+```{r}
+#Accuracy considering cluster 2
+TP2_2 = 1079 + 626 + 113
+FN2_2 = 724 + 145 + 21
+FP2_2 = 415
+TN2_2 = 610
+accuracy2_2 = (TP2_2 + TN2_2)/ (TP2_2 + FP2_2 + FN2_2 + TN2_2)
+accuracy2_2
+```
+```{r}
+#classification accuracy
+ova_acc = (610 + (1079 + 626 + 113)) / (610 + 415 + (724 + 145 + 21) + (1079 + 626 + 113))
+ova_acc
+```
+```{r}
+#recall when k = 2
+recall2 = TP2_1 / (TP2_1 + FN2_1)
+recall2
+```
+```{r}
+#precision when k = 2
+precision2 = TP2_1 / (TP2_1 + FP2_1)
+precision2
+```
+
+```{r}
+#k = 3
+subsample3 <- list()
+for(i in 1:3){
+  subsample3[[i]]<- nill_outliers_winedataset[clustering_result3$cluster==i,]
+}
+```
+```{r}
+table(subsample3[[1]]$quality)
+```
+```{r}
+table(subsample3[[2]]$quality)
+```
+```{r}
+table(subsample3[[3]]$quality)
+```
+```{r}
+#Accuracy considering cluster 1
+TP3_1 = 571
+FN3_1 = 138 + 316
+FP3_1 = 638 + 130 + 18
+TN3_1 = 551 + 399 + 68 + 614 + 242
+accuracy3 = (TP3_1 + TN3_1)/ (TP3_1 + FP3_1 + FN3_1 + TN3_1)
+accuracy3
+```
+```{r}
+#recall when k = 3
+recall3 = TP3_1 / (TP3_1 + FN3_1)
+recall3
+```
+```{r}
+#precision when k = 3
+precision3 = TP3_1 / (TP3_1 + FP3_1)
+precision3
+```
+
+
+```{r}
+#k = 4
+subsample4 <- list()
+for(i in 1:4){
+  subsample4[[i]]<- nill_outliers_winedataset[clustering_result4$cluster==i,]
+}
+```
+```{r}
+table(subsample4[[1]]$quality)
+```
+```{r}
+table(subsample4[[2]]$quality)
+```
+```{r}
+table(subsample4[[3]]$quality)
+```
+```{r}
+table(subsample4[[4]]$quality)
+```
+```{r}
+#Accuracy considering cluster 1
+TP4_1 = 528
+FN4_1 = 56 + 234 + 207
+FP4_1 = 542 + 114 + 16
+TN4_1 = 414 + 157 + 30 + 507 + 176 + 33 + 340 + 324 + 55
+accuracy4 = (TP4_1 + TN4_1)/ (TP4_1 + FP4_1 + FN4_1 + TN4_1)
+accuracy4
+```
+```{r}
+#recall when k = 4
+recall4 = TP4_1 / (TP4_1 + FN4_1)
+recall4
+```
+```{r}
+#precision when k = 4
+precision4 = TP4_1 / (TP4_1 + FP4_1)
+precision4
+```
+According the the recall values, k = 2 clustering option gives us the most probability to retrieve the relevant items. So, winner should be **k = 2**
+
+```{r}
+
+```
+
