@@ -152,7 +152,7 @@ clusterNo=NbClust(scale_inputs,distance="euclidean", min.nc=2,max.nc=10,method="
 ```
 ```{r}
 # Elbow method
-fviz_nbclust(scale_inputs, kmeans, method = "wss") + geom_vline(xintercept = 4, linetype = 2)+ 
+fviz_nbclust(scale_inputs, kmeans, method = "wss") + geom_vline(xintercept = 2, linetype = 2)+ 
   labs(subtitle = "Elbow method")
 ```
 
@@ -161,6 +161,7 @@ fviz_nbclust(scale_inputs, kmeans, method = "wss") + geom_vline(xintercept = 4, 
 fviz_nbclust(scale_inputs, kmeans, method = "silhouette")+
   labs(subtitle = "Silhouette method")
 ```
+
 ```{r}
 # Gap statistic
 # nboot = 50 to keep the function speedy. 
@@ -204,6 +205,7 @@ clustering_result3
 clustering_result3$betweenss/clustering_result3$totss
 ```
 
+
 ```{r}
 #get more information(wss) about clusters for k=4
 clustering_result4
@@ -211,6 +213,11 @@ clustering_result4
 ```{r}
 clustering_result4$betweenss/clustering_result4$totss
 ```
+
+```{r}
+clustering_result4$totss
+```
+
 
 ```{r}
 #CM for k=2
@@ -288,10 +295,10 @@ table(subsample3[[3]]$quality)
 ```
 ```{r}
 #Accuracy considering cluster 1 (k=3)
-TP3_1 = 571
-FN3_1 = 138 + 316
-FP3_1 = 638 + 130 + 18
-TN3_1 = 551 + 399 + 68 + 614 + 242
+TP3_1 = 653
+FN3_1 = 587 + 563
+FP3_1 = 349 + 216 + 36
+TN3_1 = 537 + 139 + 438 + 80 + 18 + 117
 accuracy3 = (TP3_1 + TN3_1)/ (TP3_1 + FP3_1 + FN3_1 + TN3_1)
 accuracy3
 ```
@@ -327,11 +334,11 @@ table(subsample4[[3]]$quality)
 table(subsample4[[4]]$quality)
 ```
 ```{r}
-#Accuracy considering cluster 1 (k=4)
-TP4_1 = 528
-FN4_1 = 56 + 234 + 207
-FP4_1 = 542 + 114 + 16
-TN4_1 = 414 + 157 + 30 + 507 + 176 + 33 + 340 + 324 + 55
+#Accuracy considering cluster 2 (k=4)
+TP4_1 = 520
+FN4_1 = 240 + 207 + 58
+FP4_1 = 531 + 113 + 16
+TN4_1 = 416 + 164 + 35 + 505 + 165 + 27 + 351 + 329 + 56
 accuracy4 = (TP4_1 + TN4_1)/ (TP4_1 + FP4_1 + FN4_1 + TN4_1)
 accuracy4
 ```
@@ -349,7 +356,7 @@ According the the recall values, k = 2 clustering option gives us the most proba
 
 ```{r}
 #compute PCA
-winedata_PCA  <- prcomp(nill_outliers_winedataset, scale = TRUE)
+winedata_PCA  <- prcomp(scale_inputs, scale = TRUE)
 summary(winedata_PCA)
 ```
 ```{r}
@@ -373,13 +380,8 @@ fviz_pca_var(winedata_PCA,
 head(winedata_PCA[5])
 ```
 ```{r}
-new_pca_dataset = winedata_PCA[[5]]
-new_pca <- list()
-for(i in 1:12){
-  new_pca[[i]]<- new_pca_dataset[[i]]
-}
-
-new_pca_dataset = new_pca_dataset[ -c(1:9) ]
+#transformed data with ~95% 
+new_pca_dataset = winedata_PCA$x[, -c(9, 10, 11)]
 summary(new_pca_dataset)
 ```
 
@@ -415,20 +417,21 @@ plot(cumsum(prop_varex_pca), xlab = "Principal Component",
 
 Above plot shows that 9 components results in variance close to ~ 96%. Therefore, in this case, we’ll select number of components as 9 [PC1 to PC9] and proceed as **new transformed dataset**.
 
-```{r}
-#add a input set with principal components
-input_set.data <- data.frame(winedata_PCA$x)
-```
-
-```{r}
-input_set.data <- input_set.data[,1:9]
-```
 
 ```{r}
 # kmean for k = 2 pca
-pca_clustering_result3 <- kmeans(input_set.data, 3)
-pca_clustering_result3
+pca_clustering_result2 <- kmeans(new_pca_dataset, 2)
+pca_clustering_result2
 ```
+```{r}
+pca_clustering_result2$betweenss
+```
+
+
+```{r}
+fviz_cluster(pca_clustering_result2, data = new_pca_dataset, geom="point", ellipse.type="convex", ggthme=theme_bw())
+```
+
 
 ## Objective 02
 
@@ -751,19 +754,19 @@ io_matrix7_tst <- data.frame(input1=inputvar7_1, input2=inputvar7_2, input3=inpu
 
 ```{r}
 #Input/Output matrix for T-1 train
-io_matrix1
+head(io_matrix1)
 ```
 ```{r}
 #Input/Output matrix for T-2 train
-io_matrix2
+head(io_matrix2)
 ```
 ```{r}
 #Input/Output matrix for T-3 train
-io_matrix3
+head(io_matrix3)
 ```
 ```{r}
 #Input/Output matrix for T-4 train
-io_matrix4
+head(io_matrix4)
 ```
 ```{r}
 #Input/Output matrix for T-7 train
@@ -772,23 +775,23 @@ io_matrix7
 
 ```{r}
 #Input/Output matrix for T-1 test
-io_matrix1_tst
+head(io_matrix1_tst)
 ```
 ```{r}
 #Input/Output matrix for T-2 test
-io_matrix2_tst
+head(io_matrix2_tst)
 ```
 ```{r}
 #Input/Output matrix for T-3 test
-io_matrix3_tst
+head(io_matrix3_tst)
 ```
 ```{r}
 #Input/Output matrix for T-4 test
-io_matrix4_tst
+head(io_matrix4_tst)
 ```
 ```{r}
 #Input/Output matrix for T-7 test
-io_matrix7_tst
+head(io_matrix7_tst)
 ```
 
 ```{r}
@@ -815,6 +818,11 @@ io_matrix3_tst_norm <- as.data.frame(lapply(io_matrix3_tst, min_max_norm))
 io_matrix4_tst_norm <- as.data.frame(lapply(io_matrix4_tst, min_max_norm))
 io_matrix7_tst_norm <- as.data.frame(lapply(io_matrix7_tst, min_max_norm))
 ```
+
+```{r}
+head(io_matrix2_norm)
+```
+
 
 ```{r}
 #AR analysic for training dataset when T-1
@@ -849,7 +857,7 @@ print(AR_7)
 #Neural Network training data = io_matrix1_norm
 io_matrix1_nn <- neuralnet(io_matrix1_norm$output ~ input1, data=io_matrix1_norm, hidden=c(2,1), linear.output=FALSE, threshold=0.01)
 io_matrix1_nn$result.matrix
-plot(io_matrix1_nn)
+plot(io_matrix1_nn)A
 ```
 
 ```{r}
