@@ -33,7 +33,6 @@ library(tidyverse)
 library(swamp)
 ```
 
-### Question 01
 ```{r}
 # import Excel file into R
 wineDataset <- read_excel("S:\\UoW\\YR3\\ML\\cw\\Whitewine_v2.xlsx")
@@ -134,7 +133,7 @@ for ( i in 1:11 ) {
 }
 par(oldpar1) 
 ```
-### Question 02
+
 ```{r}
 #standarize new dataset with the help of scale func in R
 scale_inputs <- scale(new_input_winedataset)
@@ -439,6 +438,9 @@ install.packages("neuralnet")
 install.packages("forecast")
 install.packages("pracma")
 install.packages("tidymodels")
+install.packages("summarytools")
+install.packages("Metrics")
+install.packages("MLmetrics")
 ```
 
 ```{r}
@@ -453,6 +455,9 @@ library(zoo)
 library(tidymodels)
 library(knitr)
 library(dplyr)
+library(summarytools)
+library(Metrics)
+library(MLmetrics)
 ```
 
 ```{r}
@@ -811,234 +816,207 @@ io_matrix4_tst_norm <- as.data.frame(lapply(io_matrix4_tst, min_max_norm))
 io_matrix7_tst_norm <- as.data.frame(lapply(io_matrix7_tst, min_max_norm))
 ```
 
-
 ```{r}
- outputvar4
+#AR analysic for training dataset when T-1
+AR_1 = arima(train_df$ElevenHr, order = c(1,0,0))
+print(AR_1)
 ```
 ```{r}
-head(inputvar4)
-```
-
-```{r}
-df_matrix
-```
-
-
-```{r}
-#Neural Network
-nn <- neuralnet(outputvar4[1][1]$~ inputvar4[1][1] + inputvar4[1][2] + inputvar4[1][3] + inputvar4[1][4], data=train_df, hidden=c(2,1), linear.output=FALSE, threshold=0.01)
-nn$result.matrix
-plot(nn)
-```
-
-
-
-```{r}
-ts_df[2]
-```
-
-
-
-```{r}
-# Checking the class
-class(ts_df)
-```
-```{r}
-# Checking the timestamp
-time(ts_df)
-```
-```{r}
-#find start and end
-start(ts_df)
-end(ts_df)
-```
-```{r}
-#find 11hour values for start and end
-ts_df[1][1]
-ts_df[430][1]
-```
-```{r}
-#number of observations in the data
-length(ts_df)  
-```
-```{r}
-par(mar = c(0.01,0.01,0.01,0.01))
-tsdisplay(ts_df) # autoregression?
-```
-
-
-```{r}
-ggtsdisplay(ts_df,
-            plot.type = "partial",
-            main = "ACF & PACF plot for `ts_df' Time-Series",
-            smooth = TRUE) 
-```
-```{r}
-auto.arima(ts_df)
-```
-
-
-
-```{r}
-#training dataset as time-series dataset
-ts_all = ts(train_df, frequency = 1)
-plot(ts_all) 
-```
-```{r}
-# Checking the class
-class(ts_all)
+#AR analysic for training dataset when T-2
+AR_2 = arima(train_df$ElevenHr, order = c(2,0,0))
+print(AR_2)
 ```
 
 ```{r}
-# Checking the timestamp
-time(ts_all)
+#AR analysic for training dataset when T-3
+AR_3 = arima(train_df$ElevenHr, order = c(3,0,0))
+print(AR_3)
 ```
 
 ```{r}
-#find end data
-end(ts_all)
-ts_all[430][1]
-```
-```{r}
-par(mar = c(0.01,0.01,0.01,0.01))
-tsdisplay(ts_all) # autoregression?
-```
-
-
-
-
-
-```{r}
-acf(ts_all)
+#AR analysic for training dataset when T-4
+AR_4 = arima(train_df$ElevenHr, order = c(4,0,0))
+print(AR_4)
 ```
 
 ```{r}
-pacf(ts_all)
-```
-```{r}
-#Fitting the AR Model to the time series
-AR <- auto.arima(ts_all[2])
-print(AR)
-```
-
-
-
-```{r}
-#fitting a line
-abline(reg=lm(trainSet~time(trainSet)))
+#AR analysic for training dataset when T-7
+AR_7 = arima(train_df$ElevenHr, order = c(7,0,0))
+print(AR_7)
 ```
 
 ```{r}
-#autocorrelation
-acf(trainSet)
-#partial autocorrelation
-pacf(trainSet)
+#Neural Network training data = io_matrix1_norm
+io_matrix1_nn <- neuralnet(io_matrix1_norm$output ~ input1, data=io_matrix1_norm, hidden=c(2,1), linear.output=FALSE, threshold=0.01)
+io_matrix1_nn$result.matrix
+plot(io_matrix1_nn)
 ```
 
-
-
-
 ```{r}
-#time series
-ts.plot(train_df[]$ElevenHr, xlab="Date", ylab="Power Consumption", main="Power Consumption 1/1/2018 - 5/22/2018")
-```
-
-
-
-
-```{r}
-
+#Neural Network training data = io_matrix2_norm
+io_matrix2_nn <- neuralnet(io_matrix2_norm$output ~ input1+input2, data=io_matrix2_norm, hidden=c(2,1), linear.output=FALSE, threshold=0.01)
+io_matrix2_nn$result.matrix
+plot(io_matrix2_nn)
 ```
 ```{r}
-autoplot(lynx) +
-  xlab("") + ylab("") +
-  ggtitle("Time Series Plot of the `lynx' Time-Series") +
-  theme(plot.title = element_text(hjust = 0.5)) #for centering the text
-
+#Neural Network training data = io_matrix3_norm
+io_matrix3_nn <- neuralnet(io_matrix3_norm$output ~ input1+input2+input3, data=io_matrix3_norm, hidden=c(2,1), linear.output=FALSE, threshold=0.01)
+io_matrix3_nn$result.matrix
+plot(io_matrix3_nn)
 ```
 
-
-
-
-
-
 ```{r}
-#Neural Network
-nn <- neuralnet(train_df$NineHr ~ TenHr + ElevenHr, data=train_df, hidden=c(2,1), linear.output=FALSE, threshold=0.01)
-nn$result.matrix
-plot(nn)
+#Neural Network training data = io_matrix4_norm
+io_matrix4_nn <- neuralnet(io_matrix4_norm$output ~ input1+input2+input3+input4, data=io_matrix4_norm, hidden=c(2,1), linear.output=FALSE, threshold=0.01)
+io_matrix4_nn$result.matrix
+plot(io_matrix4_nn)
 ```
 
-
-
+```{r}
+#Neural Network training data = io_matrix7_norm
+io_matrix7_nn <- neuralnet(io_matrix7_norm$output ~ input1+input2+input3+input4+input5+input6+input7, data=io_matrix7_norm, hidden=c(2,1), linear.output=FALSE, threshold=0.01)
+io_matrix7_nn$result.matrix
+plot(io_matrix7_nn)
+```
 
 ```{r}
-ts_df = ts(train_df[["ElevenHr"]], frequency = 288)
-plot(ts_df) 
+## Prediction using neural network (t-1)
+Predict_mat1=compute(io_matrix1_nn, io_matrix1_tst_norm)
+
+# Converting probabilities into binary classes setting threshold level 0.5
+prob_mat1 <- Predict_mat1$net.result
+pred_mat1 <- ifelse(prob_mat1>0.5, 1, 0)
+pred_mat1
 ```
 ```{r}
-theme_set(theme_bw())
-autoplot(ts_df) + ggtitle("Time Series Plot of the `UoW_electricity_consumption' Time-Series") + 
-    theme(plot.title = element_text(hjust = 0.5))
+## Prediction using neural network - (t-2)
+Predict_mat2=compute(io_matrix2_nn, io_matrix2_tst_norm)
+
+# Converting probabilities into binary classes setting threshold level 0.5
+prob_mat2 <- Predict_mat2$net.result
+pred_mat2 <- ifelse(prob_mat2>0.5, 1, 0)
+pred_mat2
 ```
 ```{r}
-set.seed(34)
-# nnetar() requires a numeric vector or time series object as
-# input ?nnetar() can be seen for more info on the function
-# nnetar() by default fits multiple neural net models and
-# gives averaged results xreg option allows for only numeric
-# vectors in nnetar() function
-fit = nnetar(ts_df)
-nnetforecast <- forecast(fit, h = 400, PI = F)  #Prediction intervals do not come by default in neural net forecasts, in constrast to ARIMA or exponential smoothing model
-autoplot(nnetforecast) + theme(plot.title = element_text(hjust = 0.5))
+## Prediction using neural network - (t-3)
+Predict_mat3=compute(io_matrix3_nn, io_matrix3_tst_norm)
+
+# Converting probabilities into binary classes setting threshold level 0.5
+prob_mat3 <- Predict_mat3$net.result
+pred_mat3 <- ifelse(prob_mat3>0.5, 1, 0)
+pred_mat3
+```
+
+```{r}
+## Prediction using neural network - (t-4)
+Predict_mat4=compute(io_matrix4_nn, io_matrix4_tst_norm)
+
+# Converting probabilities into binary classes setting threshold level 0.5
+prob_mat4 <- Predict_mat4$net.result
+pred_mat4 <- ifelse(prob_mat4>0.5, 1, 0)
+pred_mat4
+```
+
+```{r}
+## Prediction using neural network - (t-7)
+Predict_mat7=compute(io_matrix7_nn, io_matrix7_tst_norm)
+
+# Converting probabilities into binary classes setting threshold level 0.5
+prob_mat7 <- Predict_mat7$net.result
+pred_mat7 <- ifelse(prob_mat7>0.5, 1, 0)
+pred_mat7
+```
+
+**MAE**
+
+```{r}
+#MAE value t-1
+mae(io_matrix1_tst_norm$output, pred_mat1)
+```
+```{r}
+#MAE value t-2
+mae(io_matrix2_tst_norm$output, pred_mat2)
+```
+```{r}
+#MAE value t-3
+mae(io_matrix3_tst_norm$output, pred_mat3)
+```
+```{r}
+#MAE value t-4
+mae(io_matrix4_tst_norm$output, pred_mat4)
+```
+```{r}
+#MAE value t-7
+mae(io_matrix7_tst_norm$output, pred_mat7)
+```
+**RMSE**
+
+```{r}
+#MAE value t-1
+rmse(io_matrix1_tst_norm$output, pred_mat1)
+```
+```{r}
+#MAE value t-2
+rmse(io_matrix2_tst_norm$output, pred_mat2)
+```
+```{r}
+#MAE value t-3
+rmse(io_matrix3_tst_norm$output, pred_mat3)
+```
+```{r}
+#MAE value t-4
+rmse(io_matrix4_tst_norm$output, pred_mat4)
+```
+```{r}
+#MAE value t-7
+rmse(io_matrix7_tst_norm$output, pred_mat7)
 ```
 
 
 
 ```{r}
-boxplot(train_df)$out
+stby(
+  data = io_matrix1_norm,
+  INDICES = io_matrix1_norm$output, # by Output
+  FUN = descr, # descriptive statistics
+  stats = "common" # most common descr. stats
+)
 ```
-
-
-
-
-
-
-
-
-
 
 ```{r}
-str(uow_dataset)
-
-model <- auto.arima(uow_dataset[["11:00"]])
-model
+stby(
+  data = io_matrix2_norm,
+  INDICES = io_matrix2_norm$output, # by Output
+  FUN = descr, # descriptive statistics
+  stats = "common" # most common descr. stats
+)
 ```
-
+```{r}
+stby(
+  data = io_matrix3_norm,
+  INDICES = io_matrix3_norm$output, # by Output
+  FUN = descr, # descriptive statistics
+  stats = "common" # most common descr. stats
+)
+```
 
 ```{r}
-# fit neural network
-nn=neuralnet(NineHr~TenHr+ElevenHr, data=uow_dataset, hidden=3,act.fct = "logistic",
-                linear.output = FALSE)
-plot(nn)
+stby(
+  data = io_matrix4_norm,
+  INDICES = io_matrix4_norm$output, # by Output
+  FUN = descr, # descriptive statistics
+  stats = "common" # most common descr. stats
+)
 ```
-
-
-
-
-
-
- 
-
-
-
 
 ```{r}
-kill.pc(winedata_PCA, pc=c(1,9), imputeknn = F, center = T)
+stby(
+  data = io_matrix7_norm,
+  INDICES = io_matrix7_norm$output, # by Output
+  FUN = descr, # descriptive statistics
+  stats = "common" # most common descr. stats
+)
 ```
-
-
-
 
 
 
