@@ -95,18 +95,12 @@ while (length(outliers4) > 0 || length(outliers6) > 0 || length(outliers7) > 0 |
     if (length(outliers7) > 0) {
         nill_outliers_winedataset <- nill_outliers_winedataset[-which(nill_outliers_winedataset$total_sulfur_dioxide %in% outliers7), ]
     }
-    # if (length(outliers8) > 0) {
-    #     nill_outliers_winedataset <- nill_outliers_winedataset[-which(nill_outliers_winedataset$density %in% outliers8), ]
-    # }
     if (length(outliers9) > 0) {
         nill_outliers_winedataset <- nill_outliers_winedataset[-which(nill_outliers_winedataset$pH %in% outliers9), ]
     }
     if (length(outliers10) > 0) {
         nill_outliers_winedataset <- nill_outliers_winedataset[-which(nill_outliers_winedataset$sulphates %in% outliers10), ]
     }
-    # if (length(outliers11) > 0) {
-    #     nill_outliers_winedataset <- nill_outliers_winedataset[-which(nill_outliers_winedataset$alcohol %in% outliers11), ]
-    # }
 
     outliers1 <- boxplot(nill_outliers_winedataset$fixed_acidity, plot = FALSE)$out
     outliers2 <- boxplot(nill_outliers_winedataset$volatile_acidity, plot = FALSE)$out
@@ -196,14 +190,6 @@ fviz_cluster(clustering_result4, data = scale_inputs, geom="point", ellipse.type
 ```
 
 ```{r}
-k = 2:10
-#set.seed(42)	
-WSS = sapply(k, function(k) {kmeans(new_df, centers=k)$tot.withinss})
-plot(k, WSS, type="l", xlab= "Number of k", ylab="Within sum of squares")
-```
-
-
-```{r}
 #get more information(wss) about clusters for k=2
 clustering_result2
 ```
@@ -252,7 +238,7 @@ table(subsample[[1]]$quality)
 table(subsample[[2]]$quality)
 ```
 ```{r}
-#Accuracy considering cluster 1
+#Accuracy considering cluster 1 (k=2)
 TP2_1 = 610
 FN2_1 = 415
 FP2_1 = 724 + 145 + 21
@@ -261,7 +247,7 @@ accuracy2_1 = (TP2_1 + TN2_1)/ (TP2_1 + FP2_1 + FN2_1 + TN2_1)
 accuracy2_1
 ```
 ```{r}
-#Accuracy considering cluster 2
+#Accuracy considering cluster 2 (k=2)
 TP2_2 = 1079 + 626 + 113
 FN2_2 = 724 + 145 + 21
 FP2_2 = 415
@@ -302,7 +288,7 @@ table(subsample3[[2]]$quality)
 table(subsample3[[3]]$quality)
 ```
 ```{r}
-#Accuracy considering cluster 1
+#Accuracy considering cluster 1 (k=3)
 TP3_1 = 571
 FN3_1 = 138 + 316
 FP3_1 = 638 + 130 + 18
@@ -342,7 +328,7 @@ table(subsample4[[3]]$quality)
 table(subsample4[[4]]$quality)
 ```
 ```{r}
-#Accuracy considering cluster 1
+#Accuracy considering cluster 1 (k=4)
 TP4_1 = 528
 FN4_1 = 56 + 234 + 207
 FP4_1 = 542 + 114 + 16
@@ -448,8 +434,597 @@ pca_clustering_result3
 ## Objective 02
 
 ```{r}
+# install package
+install.packages("neuralnet")
+install.packages("forecast")
+install.packages("pracma")
+install.packages("tidymodels")
+```
+
+```{r}
+# load library
+library(neuralnet)
+library(forecast)
+library(pracma)
+library(tidyverse)
+knitr::opts_chunk$set(echo = TRUE)
+library(lubridate)
+library(zoo)
+library(tidymodels)
+library(knitr)
+library(dplyr)
+```
+
+```{r}
+# import Excel file into R
+uow_dataset <- read_excel("S:\\UoW\\YR3\\ML\\cw\\UoW_load.xlsx")
+```
+
+```{r}
+# get column name
+names(uow_dataset) <- gsub(" ", "_", names(uow_dataset))
+colnames(uow_dataset)
+```
+```{r}
+#make this example reproducible
+set.seed(1)
+```
+
+```{r}
+#rename the dataset columns
+names(uow_dataset)[names(uow_dataset) == "09:00"] <- "NineHr"
+names(uow_dataset)[names(uow_dataset) == "10:00"] <- "TenHr"
+names(uow_dataset)[names(uow_dataset) == "11:00"] <- "ElevenHr"
+```
+
+```{r}
+head(uow_dataset)
+```
+
+```{r}
+#use first 430 sample of dataset as training set and rest as test set
+
+train_df  <- uow_dataset[1:430, ]
+test_df   <- uow_dataset[431:500, ]
+```
+
+```{r}
+frequency(train_df)
+```
+```{r}
+#globally setting the theme for plots
+theme_set(theme_bw())
+par(mar = c(1,1,1,1))
+```
+
+```{r}
+#training dataset as time-series dataset; 11:00 hour as the variable coulmn
+ts_df = ts(train_df[]$ElevenHr, frequency = 1)
+plot(ts_df) 
+```
+
+```{r}
+#testing dataset as time-series dataset; 11:00 hour as the variable coulmn
+tst_ts_df = ts(test_df[]$ElevenHr, frequency = 1)
+plot(tst_ts_df) 
+```
+
+
+```{r}
+#set input variables and output variables set with (t-1)
+inputvar1_1 <- c()
+outputvar1 <- c()
+
+for(i in 1:429){
+  input1_ =  ts_df[i]
+  output_ =  ts_df[i+1]
+  
+  inputvar1_1 <- append(inputvar1_1, input1_)
+  outputvar1 <- append(outputvar1, output_)
+}
+io_matrix1 <- data.frame(input1=inputvar1_1, output=outputvar1)
+```
+
+
+```{r}
+#set input variables and output variables set with (t-2)
+inputvar2_1 <- c()
+inputvar2_2 <- c()
+outputvar2 <- c()
+
+for(i in 1:428){
+  input1_ =  ts_df[i]
+  input2_ =  ts_df[i+1]
+  output_ =  ts_df[i+2]
+  
+  inputvar2_1 <- append(inputvar2_1, input1_)
+  inputvar2_2 <- append(inputvar2_2, input2_)
+  outputvar2 <- append(outputvar2, output_)
+}
+io_matrix2 <- data.frame(input1=inputvar2_1, input2=inputvar2_2, output=outputvar2)
+```
+
+
+```{r}
+#set input variables and output variables set with (t-3)
+inputvar3_1 <- c()
+inputvar3_2 <- c()
+inputvar3_3 <- c()
+outputvar3 <- c()
+
+for(i in 1:427){
+  input1_ =  ts_df[i]
+  input2_ =  ts_df[i+1]
+  input3_ =  ts_df[i+2]
+  output_ =  ts_df[i+3]
+  
+  inputvar3_1 <- append(inputvar3_1, input1_)
+  inputvar3_2 <- append(inputvar3_2, input2_)
+  inputvar3_3 <- append(inputvar3_3, input3_)
+  outputvar3 <- append(outputvar3, output_)
+}
+io_matrix3 <- data.frame(input1=inputvar3_1, input2=inputvar3_2, input3=inputvar3_3, output=outputvar3)
+```
+
+
+
+```{r}
+#set input variables and output variables set with (t-4)
+inputvar4_1 <- c()
+inputvar4_2 <- c()
+inputvar4_3 <- c()
+inputvar4_4 <- c()
+outputvar4 <- c()
+
+for(i in 1:426){
+  input1_ =  ts_df[i]
+  input2_ =  ts_df[i+1]
+  input3_ =  ts_df[i+2]
+  input4_ =  ts_df[i+3]
+  output_ =  ts_df[i+4]
+  
+  inputvar4_1 <- append(inputvar4_1, input1_)
+  inputvar4_2 <- append(inputvar4_2, input2_)
+  inputvar4_3 <- append(inputvar4_3, input3_)
+  inputvar4_4 <- append(inputvar4_4, input4_)
+  outputvar4 <- append(outputvar4, output_)
+}
+io_matrix4 <- data.frame(input1=inputvar4_1, input2=inputvar4_2, input3=inputvar4_3, input4=inputvar4_4, output=outputvar4)
+```
+
+
+```{r}
+#set input variables and output variables set with (t-7)
+inputvar7_1 <- c()
+inputvar7_2 <- c()
+inputvar7_3 <- c()
+inputvar7_4 <- c()
+inputvar7_5 <- c()
+inputvar7_6 <- c()
+inputvar7_7 <- c()
+outputvar7 <- c()
+
+for(i in 1:423){
+  input1_ =  ts_df[i]
+  input2_ =  ts_df[i+1]
+  input3_ =  ts_df[i+2]
+  input4_ =  ts_df[i+3]
+  input5_ =  ts_df[i+4]
+  input6_ =  ts_df[i+5]
+  input7_ =  ts_df[i+6]
+  output_ =  ts_df[i+7]
+  
+  inputvar7_1 <- append(inputvar7_1, input1_)
+  inputvar7_2 <- append(inputvar7_2, input2_)
+  inputvar7_3 <- append(inputvar7_3, input3_)
+  inputvar7_4 <- append(inputvar7_4, input4_)
+  inputvar7_5 <- append(inputvar7_5, input5_)
+  inputvar7_6 <- append(inputvar7_6, input6_)
+  inputvar7_7 <- append(inputvar7_7, input7_)
+  outputvar7 <- append(outputvar7, output_)
+}
+io_matrix7 <- data.frame(input1=inputvar7_1, input2=inputvar7_2, input3=inputvar7_3, input4=inputvar7_4, input5=inputvar7_5, input6=inputvar7_6, input7=inputvar7_7,output=outputvar7)
+```
+
+############################################### 
+ 
+```{r}
+#set input variables and output variables set with (t-1) Test dataset
+inputvar1_1 <- c()
+outputvar1 <- c()
+
+for(i in 1:69){
+  input1_ =  tst_ts_df[i]
+  output_ =  tst_ts_df[i+1]
+  
+  inputvar1_1 <- append(inputvar1_1, input1_)
+  outputvar1 <- append(outputvar1, output_)
+}
+io_matrix1_tst <- data.frame(input1=inputvar1_1, output=outputvar1)
+```
+
+
+```{r}
+#set input variables and output variables set with (t-2)  Test dataset
+inputvar2_1 <- c()
+inputvar2_2 <- c()
+outputvar2 <- c()
+
+for(i in 1:68){
+  input1_ =  tst_ts_df[i]
+  input2_ =  tst_ts_df[i+1]
+  output_ =  tst_ts_df[i+2]
+  
+  inputvar2_1 <- append(inputvar2_1, input1_)
+  inputvar2_2 <- append(inputvar2_2, input2_)
+  outputvar2 <- append(outputvar2, output_)
+}
+io_matrix2_tst <- data.frame(input1=inputvar2_1, input2=inputvar2_2, output=outputvar2)
+```
+
+
+```{r}
+#set input variables and output variables set with (t-3)  Test dataset
+inputvar3_1 <- c()
+inputvar3_2 <- c()
+inputvar3_3 <- c()
+outputvar3 <- c()
+
+for(i in 1:67){
+  input1_ =  tst_ts_df[i]
+  input2_ =  tst_ts_df[i+1]
+  input3_ =  tst_ts_df[i+2]
+  output_ =  tst_ts_df[i+3]
+  
+  inputvar3_1 <- append(inputvar3_1, input1_)
+  inputvar3_2 <- append(inputvar3_2, input2_)
+  inputvar3_3 <- append(inputvar3_3, input3_)
+  outputvar3 <- append(outputvar3, output_)
+}
+io_matrix3_tst <- data.frame(input1=inputvar3_1, input2=inputvar3_2, input3=inputvar3_3, output=outputvar3)
+```
+
+
+
+```{r}
+#set input variables and output variables set with (t-4)  Test dataset
+inputvar4_1 <- c()
+inputvar4_2 <- c()
+inputvar4_3 <- c()
+inputvar4_4 <- c()
+outputvar4 <- c()
+
+for(i in 1:66){
+  input1_ =  tst_ts_df[i]
+  input2_ =  tst_ts_df[i+1]
+  input3_ =  tst_ts_df[i+2]
+  input4_ =  tst_ts_df[i+3]
+  output_ =  tst_ts_df[i+4]
+  
+  inputvar4_1 <- append(inputvar4_1, input1_)
+  inputvar4_2 <- append(inputvar4_2, input2_)
+  inputvar4_3 <- append(inputvar4_3, input3_)
+  inputvar4_4 <- append(inputvar4_4, input4_)
+  outputvar4 <- append(outputvar4, output_)
+}
+io_matrix4_tst <- data.frame(input1=inputvar4_1, input2=inputvar4_2, input3=inputvar4_3, input4=inputvar4_4, output=outputvar4)
+```
+
+
+```{r}
+#set input variables and output variables set with (t-7)  Test dataset
+inputvar7_1 <- c()
+inputvar7_2 <- c()
+inputvar7_3 <- c()
+inputvar7_4 <- c()
+inputvar7_5 <- c()
+inputvar7_6 <- c()
+inputvar7_7 <- c()
+outputvar7 <- c()
+
+for(i in 1:63){
+  input1_ =  tst_ts_df[i]
+  input2_ =  tst_ts_df[i+1]
+  input3_ =  tst_ts_df[i+2]
+  input4_ =  tst_ts_df[i+3]
+  input5_ =  tst_ts_df[i+4]
+  input6_ =  tst_ts_df[i+5]
+  input7_ =  tst_ts_df[i+6]
+  output_ =  tst_ts_df[i+7]
+  
+  inputvar7_1 <- append(inputvar7_1, input1_)
+  inputvar7_2 <- append(inputvar7_2, input2_)
+  inputvar7_3 <- append(inputvar7_3, input3_)
+  inputvar7_4 <- append(inputvar7_4, input4_)
+  inputvar7_5 <- append(inputvar7_5, input5_)
+  inputvar7_6 <- append(inputvar7_6, input6_)
+  inputvar7_7 <- append(inputvar7_7, input7_)
+  outputvar7 <- append(outputvar7, output_)
+}
+io_matrix7_tst <- data.frame(input1=inputvar7_1, input2=inputvar7_2, input3=inputvar7_3, input4=inputvar7_4, input5=inputvar7_5, input6=inputvar7_6, input7=inputvar7_7,output=outputvar7)
+```
+
+```{r}
+#Input/Output matrix for T-1 train
+io_matrix1
+```
+```{r}
+#Input/Output matrix for T-2 train
+io_matrix2
+```
+```{r}
+#Input/Output matrix for T-3 train
+io_matrix3
+```
+```{r}
+#Input/Output matrix for T-4 train
+io_matrix4
+```
+```{r}
+#Input/Output matrix for T-7 train
+io_matrix7
+```
+
+```{r}
+#Input/Output matrix for T-1 test
+io_matrix1_tst
+```
+```{r}
+#Input/Output matrix for T-2 test
+io_matrix2_tst
+```
+```{r}
+#Input/Output matrix for T-3 test
+io_matrix3_tst
+```
+```{r}
+#Input/Output matrix for T-4 test
+io_matrix4_tst
+```
+```{r}
+#Input/Output matrix for T-7 test
+io_matrix7_tst
+```
+
+```{r}
+#define Min-Max normalization function
+min_max_norm <- function(x) {
+    (x - min(x)) / (max(x) - min(x))
+  }
+```
+
+```{r}
+#apply Min-Max normalization to train IO matrices
+io_matrix1_norm <- as.data.frame(lapply(io_matrix1, min_max_norm))
+io_matrix2_norm <- as.data.frame(lapply(io_matrix2, min_max_norm))
+io_matrix3_norm <- as.data.frame(lapply(io_matrix3, min_max_norm))
+io_matrix4_norm <- as.data.frame(lapply(io_matrix4, min_max_norm))
+io_matrix7_norm <- as.data.frame(lapply(io_matrix7, min_max_norm))
+```
+
+```{r}
+#apply Min-Max normalization to test IO matrices
+io_matrix1_tst_norm <- as.data.frame(lapply(io_matrix1_tst, min_max_norm))
+io_matrix2_tst_norm <- as.data.frame(lapply(io_matrix2_tst, min_max_norm))
+io_matrix3_tst_norm <- as.data.frame(lapply(io_matrix3_tst, min_max_norm))
+io_matrix4_tst_norm <- as.data.frame(lapply(io_matrix4_tst, min_max_norm))
+io_matrix7_tst_norm <- as.data.frame(lapply(io_matrix7_tst, min_max_norm))
+```
+
+
+```{r}
+ outputvar4
+```
+```{r}
+head(inputvar4)
+```
+
+```{r}
+df_matrix
+```
+
+
+```{r}
+#Neural Network
+nn <- neuralnet(outputvar4[1][1]$~ inputvar4[1][1] + inputvar4[1][2] + inputvar4[1][3] + inputvar4[1][4], data=train_df, hidden=c(2,1), linear.output=FALSE, threshold=0.01)
+nn$result.matrix
+plot(nn)
+```
+
+
+
+```{r}
+ts_df[2]
+```
+
+
+
+```{r}
+# Checking the class
+class(ts_df)
+```
+```{r}
+# Checking the timestamp
+time(ts_df)
+```
+```{r}
+#find start and end
+start(ts_df)
+end(ts_df)
+```
+```{r}
+#find 11hour values for start and end
+ts_df[1][1]
+ts_df[430][1]
+```
+```{r}
+#number of observations in the data
+length(ts_df)  
+```
+```{r}
+par(mar = c(0.01,0.01,0.01,0.01))
+tsdisplay(ts_df) # autoregression?
+```
+
+
+```{r}
+ggtsdisplay(ts_df,
+            plot.type = "partial",
+            main = "ACF & PACF plot for `ts_df' Time-Series",
+            smooth = TRUE) 
+```
+```{r}
+auto.arima(ts_df)
+```
+
+
+
+```{r}
+#training dataset as time-series dataset
+ts_all = ts(train_df, frequency = 1)
+plot(ts_all) 
+```
+```{r}
+# Checking the class
+class(ts_all)
+```
+
+```{r}
+# Checking the timestamp
+time(ts_all)
+```
+
+```{r}
+#find end data
+end(ts_all)
+ts_all[430][1]
+```
+```{r}
+par(mar = c(0.01,0.01,0.01,0.01))
+tsdisplay(ts_all) # autoregression?
+```
+
+
+
+
+
+```{r}
+acf(ts_all)
+```
+
+```{r}
+pacf(ts_all)
+```
+```{r}
+#Fitting the AR Model to the time series
+AR <- auto.arima(ts_all[2])
+print(AR)
+```
+
+
+
+```{r}
+#fitting a line
+abline(reg=lm(trainSet~time(trainSet)))
+```
+
+```{r}
+#autocorrelation
+acf(trainSet)
+#partial autocorrelation
+pacf(trainSet)
+```
+
+
+
+
+```{r}
+#time series
+ts.plot(train_df[]$ElevenHr, xlab="Date", ylab="Power Consumption", main="Power Consumption 1/1/2018 - 5/22/2018")
+```
+
+
+
+
+```{r}
 
 ```
+```{r}
+autoplot(lynx) +
+  xlab("") + ylab("") +
+  ggtitle("Time Series Plot of the `lynx' Time-Series") +
+  theme(plot.title = element_text(hjust = 0.5)) #for centering the text
+
+```
+
+
+
+
+
+
+```{r}
+#Neural Network
+nn <- neuralnet(train_df$NineHr ~ TenHr + ElevenHr, data=train_df, hidden=c(2,1), linear.output=FALSE, threshold=0.01)
+nn$result.matrix
+plot(nn)
+```
+
+
+
+
+```{r}
+ts_df = ts(train_df[["ElevenHr"]], frequency = 288)
+plot(ts_df) 
+```
+```{r}
+theme_set(theme_bw())
+autoplot(ts_df) + ggtitle("Time Series Plot of the `UoW_electricity_consumption' Time-Series") + 
+    theme(plot.title = element_text(hjust = 0.5))
+```
+```{r}
+set.seed(34)
+# nnetar() requires a numeric vector or time series object as
+# input ?nnetar() can be seen for more info on the function
+# nnetar() by default fits multiple neural net models and
+# gives averaged results xreg option allows for only numeric
+# vectors in nnetar() function
+fit = nnetar(ts_df)
+nnetforecast <- forecast(fit, h = 400, PI = F)  #Prediction intervals do not come by default in neural net forecasts, in constrast to ARIMA or exponential smoothing model
+autoplot(nnetforecast) + theme(plot.title = element_text(hjust = 0.5))
+```
+
+
+
+```{r}
+boxplot(train_df)$out
+```
+
+
+
+
+
+
+
+
+
+
+```{r}
+str(uow_dataset)
+
+model <- auto.arima(uow_dataset[["11:00"]])
+model
+```
+
+
+```{r}
+# fit neural network
+nn=neuralnet(NineHr~TenHr+ElevenHr, data=uow_dataset, hidden=3,act.fct = "logistic",
+                linear.output = FALSE)
+plot(nn)
+```
+
+
+
 
 
 
